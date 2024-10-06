@@ -7,8 +7,18 @@ steps:
 - name: 'ubuntu'
   args: ['ls', '-la', 'src']
 
+# Print Node.js and npm versions
+- name: 'node:16'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    node --version
+    npm --version
+
 # Install dependencies
-- name: 'gcr.io/cloud-builders/npm'
+- name: 'node:16'
+  entrypoint: 'npm'
   args: ['install']
   dir: 'src'
 
@@ -17,28 +27,30 @@ steps:
   args: ['build', '-t', 'gcr.io/$PROJECT_ID/my-function', '.']
 
 # Deploy cloneRepoToStorage function
-- name: 'gcr.io/cloud-builders/gcloud'
-  args: 
-    - 'functions'
-    - 'deploy'
-    - 'cloneRepoToStorage'
-    - '--trigger-http'
-    - '--runtime=nodejs16'
-    - '--entry-point=cloneRepoToStorage'
-    - '--source=src'
-    - '--allow-unauthenticated'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    gcloud functions deploy cloneRepoToStorage \
+      --trigger-http \
+      --runtime=nodejs16 \
+      --entry-point=cloneRepoToStorage \
+      --source=src \
+      --allow-unauthenticated
 
 # Deploy analyzeCode function
-- name: 'gcr.io/cloud-builders/gcloud'
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  entrypoint: 'bash'
   args:
-    - 'functions'
-    - 'deploy'
-    - 'analyzeCode'
-    - '--trigger-http'
-    - '--runtime=nodejs16'
-    - '--entry-point=analyzeCode'
-    - '--source=src'
-    - '--allow-unauthenticated'
+  - '-c'
+  - |
+    gcloud functions deploy analyzeCode \
+      --trigger-http \
+      --runtime=nodejs16 \
+      --entry-point=analyzeCode \
+      --source=src \
+      --allow-unauthenticated
 
 images:
 - 'gcr.io/$PROJECT_ID/my-function'
