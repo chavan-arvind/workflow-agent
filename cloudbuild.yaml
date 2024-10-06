@@ -1,0 +1,7 @@
+steps:
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['install']
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['functions', 'deploy', 'cloneRepoToStorage', '--trigger-http', '--runtime', 'nodejs16', '--entry-point', 'cloneRepoToStorage']
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['functions', 'deploy', 'analyzeCode', '--trigger-http', '--runtime', 'nodejs16', '--entry-point', 'analyzeCode']
