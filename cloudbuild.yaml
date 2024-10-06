@@ -24,33 +24,23 @@ steps:
 
 # Build the Docker image
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/my-function', '.']
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/workflow-agent', '.']
 
-# Deploy cloneRepoToStorage function
+# Push the Docker image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/workflow-agent']
+
+# Deploy to Cloud Run
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
   entrypoint: 'bash'
   args:
   - '-c'
   - |
-    gcloud functions deploy cloneRepoToStorage \
-      --trigger-http \
-      --runtime=nodejs16 \
-      --entry-point=cloneRepoToStorage \
-      --source=src \
-      --allow-unauthenticated
-
-# Deploy analyzeCode function
-- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
-  entrypoint: 'bash'
-  args:
-  - '-c'
-  - |
-    gcloud functions deploy analyzeCode \
-      --trigger-http \
-      --runtime=nodejs16 \
-      --entry-point=analyzeCode \
-      --source=src \
+    gcloud run deploy workflow-agent \
+      --image gcr.io/$PROJECT_ID/workflow-agent \
+      --platform managed \
+      --region us-central1 \
       --allow-unauthenticated
 
 images:
-- 'gcr.io/$PROJECT_ID/my-function'
+- 'gcr.io/$PROJECT_ID/workflow-agent'

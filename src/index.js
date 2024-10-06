@@ -129,3 +129,7 @@ function walkSync(dir, filelist = []) {
   });
   return filelist;
 }
+
+// Add this at the end of your file
+const port = process.env.PORT || 8080;
+functions.http.start(port);

@@ -11,5 +11,11 @@ RUN npm install
 # Copy source files
 COPY src .
 
+# Set the PORT environment variable
+ENV PORT=8080
+
+# Expose the port
+EXPOSE 8080
+
 # Start the function
 CMD [ "npm", "start" ]
