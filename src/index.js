@@ -6,32 +6,16 @@ const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Use functions.http to define an HTTP function
-functions.http('cloneRepoToStorage', async (req, res) => {
-  try {
-    const { repoUrl } = req.body;
-
-    if (!isValidUrl(repoUrl)) {
-      return res.status(400).json({ error: 'Invalid "repoUrl" parameter.' });
-    }
-
-    const tmpDir = tmp.dirSync({ unsafeCleanup: true });
-    const repoPath = tmpDir.name;
-
-    await cloneRepository(repoUrl, repoPath);
-
-    const storage = new Storage();
-    const bucketName = process.env.BUCKET_NAME || 'cloud-function-alert-workflow-manager-437809';
-    const bucket = storage.bucket(bucketName);
-
-    await uploadRepository(repoPath, bucket);
-
-    // Clean up is handled automatically by tmp
-
-    res.status(200).json({ message: 'Repository cloned and uploaded successfully.' });
-  } catch (error) {
-    console.error('Error cloning or uploading repository:', error);
-    res.status(500).json({ error: 'Error cloning or uploading repository.' });
+// Main handler function
+functions.http('handler', (req, res) => {
+  const path = req.path;
+  
+  if (path === '/cloneRepoToStorage') {
+    return cloneRepoToStorage(req, res);
+  } else if (path === '/analyzeCode') {
+    return analyzeCode(req, res);
+  } else {
+    res.status(404).send('Not Found');
   }
 });
 
