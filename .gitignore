@@ -1,4 +1,4 @@
-.terraform/
+# Terraform files
 .terraform/
 *.tfstate
 *.tfstate.*
@@ -8,3 +8,7 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
