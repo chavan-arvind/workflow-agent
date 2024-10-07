@@ -6,8 +6,11 @@ const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+console.log('Starting application...');
+
 // Main handler function
 functions.http('handler', (req, res) => {
+  console.log('Received request:', req.path);
   const reqPath = req.path;
   
   if (reqPath === '/cloneRepoToStorage') {
@@ -145,6 +148,11 @@ exports.analyzeCode = functions.http('analyzeCode', async (req, res) => {
 
 // Start the server
 const port = process.env.PORT || 8080;
-functions.http.start(port);
+console.log(`Attempting to start server on port ${port}`);
+functions.http.start(port).then(() => {
+  console.log(`Server successfully started and listening on port ${port}`);
+}).catch((error) => {
+  console.error('Failed to start server:', error);
+});
 
 console.log(`Server listening on port ${port}`);

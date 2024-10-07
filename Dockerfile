@@ -17,5 +17,10 @@ ENV PORT=8080
 # Expose the port
 EXPOSE 8080
 
+# Add debugging
+RUN echo "Node version: $(node -v)"
+RUN echo "NPM version: $(npm -v)"
+RUN ls -la
+
 # Start the function
-CMD [ "npm", "start" ]
+CMD ["sh", "-c", "echo 'Starting server on port $PORT' && npm start"]

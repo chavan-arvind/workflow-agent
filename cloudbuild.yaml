@@ -32,6 +32,15 @@ steps:
       --set-env-vars=BUCKET_NAME=cloud-function-alert-$PROJECT_ID,GEMINI_API_KEY=$_GEMINI_API_KEY
     echo "Deployment completed."
 
+# Print container logs
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    sleep 30  # Wait for the container to start
+    gcloud run logs read workflow-agent --limit=50
+
 images:
 - 'gcr.io/$PROJECT_ID/workflow-agent'
 
