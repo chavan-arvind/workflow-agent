@@ -133,20 +133,30 @@ resource "google_storage_bucket_object" "function_source" {
 }
 
 # Deploy the Cloud Function
-resource "google_cloudfunctions_function" "function" {
+resource "google_cloudfunctions2_function" "default" {
   name        = "my-cloud-function"
+  location    = var.region
   description = "My Cloud Function"
-  runtime     = "nodejs16"
 
-  available_memory_mb   = 256
-  source_archive_bucket = google_storage_bucket.function_bucket.name
-  source_archive_object = google_storage_bucket_object.function_source.name
-  trigger_http          = true
-  entry_point           = "handler"
+  build_config {
+    runtime     = "nodejs16"
+    entry_point = "handler" # make sure this matches the exported function name in your index.js
+    source {
+      storage_source {
+        bucket = google_storage_bucket.function_bucket.name
+        object = google_storage_bucket_object.function_source.name
+      }
+    }
+  }
 
-  environment_variables = {
-    BUCKET_NAME    = google_storage_bucket.function_bucket.name
-    GEMINI_API_KEY = var.gemini_api_key
+  service_config {
+    max_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 60
+    environment_variables = {
+      BUCKET_NAME    = google_storage_bucket.function_bucket.name
+      GEMINI_API_KEY = var.gemini_api_key
+    }
   }
 
   depends_on = [
@@ -156,10 +166,10 @@ resource "google_cloudfunctions_function" "function" {
 }
 
 # IAM entry for all users to invoke the function
-resource "google_cloudfunctions_function_iam_member" "invoker" {
-  project        = google_cloudfunctions_function.function.project
-  region         = google_cloudfunctions_function.function.region
-  cloud_function = google_cloudfunctions_function.function.name
+resource "google_cloudfunctions2_function_iam_member" "invoker" {
+  project        = google_cloudfunctions2_function.default.project
+  location       = google_cloudfunctions2_function.default.location
+  cloud_function = google_cloudfunctions2_function.default.name
 
   role   = "roles/cloudfunctions.invoker"
   member = "allUsers"

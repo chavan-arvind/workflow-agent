@@ -9,7 +9,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 console.log('Starting application...');
 
 // Main handler function
-functions.http('handler', (req, res) => {
+exports.handler = functions.http('handler', (req, res) => {
   console.log('Received request:', req.path);
   const reqPath = req.path;
   
