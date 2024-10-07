@@ -8,11 +8,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Main handler function
 functions.http('handler', (req, res) => {
-  const path = req.path;
+  const reqPath = req.path;
   
-  if (path === '/cloneRepoToStorage') {
+  if (reqPath === '/cloneRepoToStorage') {
     return cloneRepoToStorage(req, res);
-  } else if (path === '/analyzeCode') {
+  } else if (reqPath === '/analyzeCode') {
     return analyzeCode(req, res);
   } else {
     res.status(404).send('Not Found');
@@ -114,6 +114,8 @@ function walkSync(dir, filelist = []) {
   return filelist;
 }
 
-// Add this at the end of your file
+// Start the server
 const port = process.env.PORT || 8080;
 functions.http.start(port);
+
+console.log(`Server listening on port ${port}`);
