@@ -1,7 +1,7 @@
 locals {
-  project_id              ="workflow-manager-437809"
-  region                  = "asia-south1"
-  service_account_email   = "terraform-alert-sa@workflow-manager-437809.iam.gserviceaccount.com"
+  project_id            = data.google_project.project.project_id
+  region                = var.region
+  
   service_account_roles   = [
     "roles/datastore.owner",
     "roles/logging.configWriter",
@@ -22,8 +22,13 @@ locals {
     "roles/eventarc.eventReceiver",
     "roles/run.invoker"
   ]
+  
+  labels = {
+    environment = "production"
+    project     = "repo-cloner"
+  }
 }
- 
+
 resource "google_project_iam_member" "runner-sa-roles" {
   for_each = toset(local.service_account_roles)
  
@@ -58,11 +63,15 @@ module "project-services" {
  
 # Google storage bucket that contains the code for the cloud function
 resource "google_storage_bucket" "cloud_function_source_bucket" {
-  name                       = "cloud-function-code-repositories"
+  name                       = "cloud-function-alert-${local.project_id}"
   location                   = local.region
   project                    = "workflow-manager-437809"
   force_destroy              = true
   uniform_bucket_level_access = true
+  labels = local.labels
+  lifecycle {
+    prevent_destroy = true
+  }
 }
  
  
@@ -101,16 +110,15 @@ resource "google_project_iam_binding" "google_storage_project_service_account_is
   ]
 }
  
-resource "google_cloudfunctions2_function" "cloneRepoToStorage" {
-  name        = "cloud-function-trigger-cloneRepoToStorage"
+resource "google_cloudfunctions2_function" "clone_repo_to_storage" {
+  name        = "cloud-function-trigger-clone-repo-to-storage"
   location    = local.region
-  project     = local.project_id
-  description = "Cloud function gen2 trigger using terraform"
- 
+  description = "Cloud function to clone repository to storage"
+  labels      = local.labels
+
   build_config {
     runtime     = "nodejs16"
     entry_point = "cloneRepoToStorage"
- 
     source {
       storage_source {
         bucket = google_storage_bucket.cloud_function_source_bucket.name
@@ -118,25 +126,61 @@ resource "google_cloudfunctions2_function" "cloneRepoToStorage" {
       }
     }
   }
- 
+
   service_config {
-    max_instance_count              = 1
-    min_instance_count              = 0
-    available_memory                = "256M"
-    timeout_seconds                 = 60
-    environment_variables           = {
-      SERVICE_CONFIG_TEST = "config_test"
+    max_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 60
+    service_account_email = var.service_account_email
+  }
+
+  event_trigger {
+    trigger_region = local.region
+    event_type     = "google.cloud.storage.object.v1.finalized"
+    event_filters {
+      attribute = "bucket"
+      value     = google_storage_bucket.cloud_function_source_bucket.name
     }
-    ingress_settings                = "ALLOW_INTERNAL_ONLY"
-    all_traffic_on_latest_revision = true
-    service_account_email = local.service_account_email
   }
  
- 
-  depends_on = [
+depends_on = [
     google_storage_bucket.cloud_function_source_bucket,
     google_storage_bucket_object.zip,
     module.project-services,
     google_project_iam_binding.google_storage_project_service_account_is_pubsub_publisher
+  ]
+}
+
+resource "google_cloudfunctions2_function" "analyze_code" {
+  name        = "cloud-function-analyze-code"
+  location    = local.region
+  description = "Cloud function to analyze code using Gemini API"
+  labels      = local.labels
+
+  build_config {
+    runtime     = "nodejs16"
+    entry_point = "analyzeCode"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.cloud_function_source_bucket.name
+        object = google_storage_bucket_object.zip.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count = 1
+    available_memory   = "256M"
+    timeout_seconds    = 540  # Increased timeout for potentially long-running analysis
+    service_account_email = var.service_account_email
+    environment_variables = {
+      GEMINI_API_KEY = var.gemini_api_key
+    }
+  }
+
+  depends_on = [
+    google_storage_bucket.cloud_function_source_bucket,
+    google_storage_bucket_object.zip,
+    module.project-services,
   ]
 }
