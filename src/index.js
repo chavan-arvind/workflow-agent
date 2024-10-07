@@ -114,6 +114,35 @@ function walkSync(dir, filelist = []) {
   return filelist;
 }
 
+// Export the functions
+exports.cloneRepoToStorage = functions.http('cloneRepoToStorage', async (req, res) => {
+  // Implement your cloneRepoToStorage logic here
+  // This is a placeholder implementation
+  res.status(200).send('cloneRepoToStorage function called');
+});
+
+exports.analyzeCode = functions.http('analyzeCode', async (req, res) => {
+  try {
+    const { bucketName, repoPath } = req.body;
+
+    if (!bucketName || !repoPath) {
+      return res.status(400).json({ error: 'Missing bucketName or repoPath parameter.' });
+    }
+
+    const storage = new Storage();
+    const bucket = storage.bucket(bucketName);
+
+    const code = await fetchCodeFromBucket(bucket, repoPath);
+    const analysis = await analyzeCodeWithGemini(code);
+    await writeAnalysisToBucket(bucket, repoPath, analysis);
+
+    res.status(200).json({ message: 'Code analyzed and result saved successfully.' });
+  } catch (error) {
+    console.error('Error analyzing code:', error);
+    res.status(500).json({ error: 'Error analyzing code.' });
+  }
+});
+
 // Start the server
 const port = process.env.PORT || 8080;
 functions.http.start(port);
